@@ -1,0 +1,22 @@
+# Example configuration file for sqldoc.
+# When the value is optional, the defaults shown below are used.
+
+database:
+  # Required: fallback to $DATABASE_URL value.
+  url: "postgres://user:password@localhost:5432/database_name"
+  # Optional: Schemas to be included in the documentation.
+  schemas: ["public"]
+  # Optional: Tables to be excluded from the documentation.
+  exclude_tables: [""]
+
+documentation:
+  # Documentation strategies:
+  # - unified: All tables are documented in a single file.
+  # - per_table: Each table is documented in a separate file.
+  strategy: unified
+  # Optional: Output directory for the documentation.
+  directory: "."
+  # Optional: Output filename for the documentation. Only used in "unified" strategy.
+  filename: "schema.md"
+  # Write the output to STDOUT as well.
+  stdout: true
