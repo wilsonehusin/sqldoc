@@ -4,18 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"runtime/debug"
-	"slices"
-
-	"github.com/charmbracelet/glamour"
-	"github.com/nao1215/markdown"
 
 	"go.husin.dev/sqldoc/config"
 	"go.husin.dev/sqldoc/db"
+	"go.husin.dev/sqldoc/md"
 )
 
 const helpText = `sqldoc generates markdown documentation for SQL databases.
@@ -105,114 +100,9 @@ func run() error {
 	}
 	defer db.Close()
 
-	if err := exec(ctx, db); err != nil {
-		return err
+	m := md.New(db, conf)
+	if err := m.Generate(ctx); err != nil {
+		return fmt.Errorf("generating markdown: %w", err)
 	}
 	return nil
-}
-
-func exec(ctx context.Context, db db.Database) error {
-	if err := os.MkdirAll(conf.Documentation.Directory, 0755); err != nil {
-		return fmt.Errorf("precreating directory: %w", err)
-	}
-	if conf.Documentation.Strategy == "per_table" {
-		return execPerTable(ctx, db)
-	}
-	return execUnified(ctx, db)
-}
-
-func execUnified(ctx context.Context, db db.Database) error {
-	f, err := os.OpenFile(filepath.Join(conf.Documentation.Directory, conf.Documentation.Filename), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return fmt.Errorf("creating file: %w", err)
-	}
-	defer f.Close()
-
-	for _, schema := range conf.Database.Schemas {
-		tables, err := db.ListTables(ctx, schema)
-		if err != nil {
-			return fmt.Errorf("fetching tables: %w", err)
-		}
-
-		for i, table := range tables {
-			if slices.Contains(conf.Database.ExcludeTables, table) {
-				continue
-			}
-			if err := tableToMarkdown(ctx, db, f, schema, table); err != nil {
-				return fmt.Errorf("writing markdown: %w", err)
-			}
-			if i < len(tables)-1 {
-				f.WriteString("\n")
-			}
-		}
-	}
-	return nil
-}
-
-func execPerTable(ctx context.Context, db db.Database) error {
-	for _, schema := range conf.Database.Schemas {
-		tables, err := db.ListTables(ctx, schema)
-		if err != nil {
-			return fmt.Errorf("fetching tables: %w", err)
-		}
-
-		for _, table := range tables {
-			if slices.Contains(conf.Database.ExcludeTables, table) {
-				continue
-			}
-			f, err := os.OpenFile(filepath.Join(conf.Documentation.Directory, table+".md"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-			if err != nil {
-				return fmt.Errorf("creating file: %w", err)
-			}
-			defer f.Close()
-
-			if err := tableToMarkdown(ctx, db, f, schema, table); err != nil {
-				return fmt.Errorf("writing markdown: %w", err)
-			}
-			f.Close()
-		}
-	}
-	return nil
-}
-
-func tableToMarkdown(ctx context.Context, db db.Database, w io.Writer, schema, tableName string) error {
-	md := markdown.NewMarkdown(w)
-
-	md.H1(markdown.Code(tableName))
-	md.PlainText("")
-	mdTableRows := [][]string{}
-	columns, err := db.ListColumns(ctx, schema, tableName)
-	if err != nil {
-		return fmt.Errorf("fetching columns for '%s.%s': %w", schema, tableName, err)
-	}
-	for _, column := range columns {
-		nullable := ""
-		if !column.Nullable {
-			nullable = "NOT NULL"
-		}
-		d := column.Default
-		if d != "" {
-			d = markdown.Code(d)
-		}
-		mdTableRows = append(mdTableRows, []string{
-			markdown.Code(column.Name),
-			column.Type,
-			nullable,
-			d,
-		})
-	}
-	md.Table(markdown.TableSet{
-		Header: []string{"Name", "Type", "Nullable", "Default"},
-		Rows:   mdTableRows,
-	})
-	if conf.Documentation.Stdout {
-		out, err := glamour.Render(md.String(), "dark")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error rendering markdown to terminal: %v\n", err)
-		} else {
-			fmt.Println(out)
-		}
-	}
-
-	return md.Build()
 }
