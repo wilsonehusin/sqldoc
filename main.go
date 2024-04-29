@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -170,22 +169,10 @@ func execPerTable(ctx context.Context, db db.Database) error {
 }
 
 func tableToMarkdown(ctx context.Context, db db.Database, w io.Writer, schema, tableName string) error {
-	var buf bytes.Buffer
-	if conf.Documentation.Stdout {
-		w = io.MultiWriter(w, &buf)
-		defer func() {
-			out, err := glamour.Render(buf.String(), "dark")
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "rendering markdown to terminal: %v\n", err)
-				return
-			}
-			fmt.Println(out)
-		}()
-	}
 	md := markdown.NewMarkdown(w)
 
 	md.H1(markdown.Code(tableName))
-	md.Text("\n")
+	md.PlainText("\n")
 	mdTableRows := [][]string{}
 	columns, err := db.ListColumns(ctx, schema, tableName)
 	if err != nil {
@@ -211,6 +198,14 @@ func tableToMarkdown(ctx context.Context, db db.Database, w io.Writer, schema, t
 		Header: []string{"Name", "Type", "Nullable", "Default"},
 		Rows:   mdTableRows,
 	})
+	if conf.Documentation.Stdout {
+		out, err := glamour.Render(md.String(), "dark")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error rendering markdown to terminal: %v\n", err)
+		} else {
+			fmt.Println(out)
+		}
+	}
 
 	return md.Build()
 }
