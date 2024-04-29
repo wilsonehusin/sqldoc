@@ -1,6 +1,6 @@
 # Output documentation
-schema.md
-schema/*
+/schema.md
+/schema/*
 
 # Development binaries
 bin/*
