@@ -4,6 +4,20 @@ SQLDoc is a markdown documentation for SQL tables. Inspired by Rails ActiveRecor
 
 ![Demo of SQLDoc](demo/demo.gif)
 
+## Installation
+
+### Using Go
+
+Recommended if you have Go toolchain already set up.
+
+```sh
+go install go.husin.dev/sqldoc@latest
+```
+
+### Prebuilt binaries
+
+Download the latest release from [GitHub releases](https://github.com/wilsonehusin/sqldoc/releases).
+
 ## Features
 
 - [x] Show columns
