@@ -172,7 +172,7 @@ func tableToMarkdown(ctx context.Context, db db.Database, w io.Writer, schema, t
 	md := markdown.NewMarkdown(w)
 
 	md.H1(markdown.Code(tableName))
-	md.PlainText("\n")
+	md.PlainText("")
 	mdTableRows := [][]string{}
 	columns, err := db.ListColumns(ctx, schema, tableName)
 	if err != nil {
