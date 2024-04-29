@@ -51,7 +51,7 @@ func main() {
 			help()
 			return
 		case "version":
-			version()
+			ver()
 			return
 		}
 	}
@@ -60,11 +60,18 @@ func main() {
 	}
 }
 
-func version() {
+var version = "dev"
+
+func ver() {
 	bi, ok := debug.ReadBuildInfo()
 	if !ok {
-		fmt.Println("sqldoc dev")
+		fmt.Println("sqldoc: unknown version")
 		return
+	}
+
+	if v := bi.Main.Version; v != "(devel)" {
+		// Use version from `go install`.
+		version = v
 	}
 	rev := "dev"
 	for _, i := range bi.Settings {
@@ -73,7 +80,7 @@ func version() {
 			break
 		}
 	}
-	fmt.Printf("sqldoc %s (%s)\n", bi.Main.Version, rev)
+	fmt.Printf("sqldoc: %s (%s)\n", version, rev)
 }
 
 var (
