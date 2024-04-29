@@ -2,6 +2,8 @@
 
 SQLDoc is a markdown documentation for SQL tables. Inspired by Rails ActiveRecord `schema.rb` and [drwl/annotaterb](https://github.com/drwl/annotaterb).
 
+![Demo of SQLDoc](demo/demo.gif)
+
 ## Why?
 
 Projects often manages their schema roll out through migrations (e.g. [golang-migrate/migrate](https://github.com/golang-migrate/migrate)). As a project matures, it's quite common to encounter several `ALTER TABLE` commands, which makes it difficult to have a near-instant idea of what the schema looks like.
