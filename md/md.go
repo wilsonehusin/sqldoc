@@ -156,38 +156,43 @@ func (m *MD) renderTable(ctx context.Context, w io.Writer, schema, tableName str
 		Header: []string{"Name", "Type", "Nullable", "Default", "Key", "Target"},
 		Rows:   mdTableRows,
 	})
-	mermaid_dep := ""
 
-	mermaid := "```mermaid\nerDiagram\n"
-	mermaid = fmt.Sprintf("%s\"%s.%s\"{\n", mermaid, schema, tableName)
-	for _, column := range columns {
-		// nullable := ""
-		// if !column.Nullable {
-		// 	nullable = "NN"
-		// }
-		k := []string{}
-		if column.PK {
-			k = append(k, "PK")
-		}
-		if column.FK != "" {
-			k = append(k, "FK")
-			mermaid_dep = fmt.Sprintf("%s\n\"%s.%s\" o|--o| \"%s\":%s",
-				mermaid_dep,
-				schema, tableName,
-				column.FK,
-				column.FK_ref)
+	if m.conf.Documentation.Mermaid {
+		mermaid_dep := ""
+
+		mermaid := "```mermaid\nerDiagram\n"
+		mermaid = fmt.Sprintf("%s\"%s.%s\"{\n", mermaid, schema, tableName)
+		for _, column := range columns {
+			// nullable := ""
+			// if !column.Nullable {
+			// 	nullable = "NN"
+			// }
+			k := []string{}
+			if column.PK {
+				k = append(k, "PK")
+			}
+			if column.FK != "" {
+				k = append(k, "FK")
+				mermaid_dep = fmt.Sprintf("%s\n\"%s.%s\" o|--o| \"%s\":%s",
+					mermaid_dep,
+					schema, tableName,
+					column.FK,
+					column.FK_ref)
+			}
+
+			if column.UK {
+				k = append(k, "UK")
+			}
+
+			mermaid = fmt.Sprintf("%s%s %s %s\n", mermaid,
+				strings.Replace(column.Type, " ", "_", -1),
+				column.Name, strings.Join(k[:], ","))
 		}
 
-		if column.UK {
-			k = append(k, "UK")
-		}
-		mermaid = fmt.Sprintf("%s%s %s %s\n", mermaid,
-			strings.Replace(column.Type, " ", "_", -1),
-			column.Name, strings.Join(k[:], ","))
+		mermaid = fmt.Sprintf("%s}\n%s\n```", mermaid, mermaid_dep)
+
+		canvas.PlainText(mermaid)
 	}
-	mermaid = fmt.Sprintf("%s}\n%s\n```", mermaid, mermaid_dep)
-
-	canvas.PlainText(mermaid)
 
 	if len(constraints) > 0 {
 		canvas.PlainText("")
