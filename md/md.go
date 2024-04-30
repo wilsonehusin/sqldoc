@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/charmbracelet/glamour"
 	"github.com/nao1215/markdown"
@@ -100,30 +101,133 @@ func (m *MD) renderTable(ctx context.Context, w io.Writer, schema, tableName str
 	canvas.H1(markdown.Code(tableName))
 	canvas.PlainText("")
 	mdTableRows := [][]string{}
+	constraints, err := m.db.ListConstraints(ctx, schema, tableName)
+
+	if err != nil {
+		return fmt.Errorf("fetching constraints for '%s.%s': %w", schema, tableName, err)
+	}
+
 	columns, err := m.db.ListColumns(ctx, schema, tableName)
 	if err != nil {
 		return fmt.Errorf("fetching columns for '%s.%s': %w", schema, tableName, err)
 	}
-	for _, column := range columns {
+	for idx := range columns {
 		nullable := ""
-		if !column.Nullable {
+		if !columns[idx].Nullable {
 			nullable = "NOT NULL"
 		}
-		d := column.Default
+		d := columns[idx].Default
 		if d != "" {
 			d = markdown.Code(d)
 		}
+		c := []string{}
+		t := ""
+		for _, constraint := range constraints {
+			if constraint.TableColumn == columns[idx].Name {
+				if constraint.Type == "PRIMARY KEY" {
+					c = append(c, "PK")
+					columns[idx].PK = true
+				}
+				if constraint.Type == "UNIQUE" {
+					c = append(c, "UK")
+					columns[idx].UK = true
+				}
+				if constraint.Type == "FOREIGN KEY" {
+					c = append(c, "FK")
+					t = fmt.Sprintf("%s.%s", constraint.TargetSchema, constraint.TargetTable)
+					columns[idx].FK = t
+					t = fmt.Sprintf("%s.%s", t, constraint.TargetColumn)
+					columns[idx].FK_ref = constraint.TargetColumn
+
+				}
+			}
+
+		}
 		mdTableRows = append(mdTableRows, []string{
-			markdown.Code(column.Name),
-			column.Type,
+			markdown.Code(columns[idx].Name),
+			columns[idx].Type,
 			nullable,
 			d,
+			strings.Join(c[:], ", "),
+			t,
 		})
 	}
 	canvas.Table(markdown.TableSet{
-		Header: []string{"Name", "Type", "Nullable", "Default"},
+		Header: []string{"Name", "Type", "Nullable", "Default", "Key", "Target"},
 		Rows:   mdTableRows,
 	})
+	mermaid_dep := ""
+
+	mermaid := "```mermaid\nerDiagram\n"
+	mermaid = fmt.Sprintf("%s\"%s.%s\"{\n", mermaid, schema, tableName)
+	for _, column := range columns {
+		// nullable := ""
+		// if !column.Nullable {
+		// 	nullable = "NN"
+		// }
+		k := []string{}
+		if column.PK {
+			k = append(k, "PK")
+		}
+		if column.FK != "" {
+			k = append(k, "FK")
+			mermaid_dep = fmt.Sprintf("%s\n\"%s.%s\" o|--o| \"%s\":%s",
+				mermaid_dep,
+				schema, tableName,
+				column.FK,
+				column.FK_ref)
+		}
+
+		if column.UK {
+			k = append(k, "UK")
+		}
+		mermaid = fmt.Sprintf("%s%s %s %s\n", mermaid,
+			strings.Replace(column.Type, " ", "_", -1),
+			column.Name, strings.Join(k[:], ","))
+	}
+	mermaid = fmt.Sprintf("%s}\n%s\n```", mermaid, mermaid_dep)
+
+	canvas.PlainText(mermaid)
+
+	if len(constraints) > 0 {
+		canvas.PlainText("")
+		canvas.H2("Constraints")
+		canvas.PlainText("")
+		mdConstraintsRows := [][]string{}
+		for _, constraint := range constraints {
+
+			col := ""
+			if constraint.TableColumn != "" {
+				col = markdown.Code(constraint.TableColumn)
+			}
+			tgtsch := ""
+			if constraint.TargetSchema != "" {
+				tgtsch = markdown.Code(constraint.TargetSchema)
+			}
+			tgttbl := ""
+			if constraint.TargetTable != "" {
+				tgttbl = markdown.Code(constraint.TargetTable)
+			}
+			tgtcol := ""
+			if constraint.TargetColumn != "" {
+				tgtcol = markdown.Code(constraint.TargetColumn)
+			}
+			mdConstraintsRows = append(mdConstraintsRows, []string{
+				markdown.Code(constraint.Schema),
+				markdown.Code(constraint.Name),
+				markdown.Code(constraint.Type),
+				col,
+				tgtsch,
+				tgttbl,
+				tgtcol,
+			})
+		}
+		canvas.Table(markdown.TableSet{
+			Header: []string{"Schema", "Name", "Type", "Referring Column", "Target Schema", "Target Table", "Target Column"},
+			Rows:   mdConstraintsRows,
+		})
+	}
+
 	if m.conf.Documentation.Stdout {
 		out, err := glamour.Render(canvas.String(), "dark")
 		if err != nil {
