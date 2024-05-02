@@ -29,6 +29,7 @@ type Documentation struct {
 	Directory string `json:"directory"`
 	Filename  string `json:"filename"`
 	Stdout    bool   `json:"stdout"`
+	Mermaid   bool   `json:"mermaid"`
 }
 
 func Default() *Config {

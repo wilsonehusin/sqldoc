@@ -20,3 +20,5 @@ documentation:
   filename: "schema.md"
   # Write the output to STDOUT as well.
   stdout: true
+  # Write mermaid output
+  mermaid: true
