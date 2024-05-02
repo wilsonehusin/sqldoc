@@ -1,1 +1,11 @@
-/var/folders/zq/ykt92t3956v7l2yx0l3dk5r80000gn/T/TestRenderTableSingleTableWithColumns2035277813/001/TestRenderTable__SingleTableWithColumns.md
+# `sqldoc_single_table_with_columns`
+
+|       NAME        |            TYPE             | NULLABLE |   DEFAULT    |
+|-------------------|-----------------------------|----------|--------------|
+| `uuid_field`      | uuid                        | NOT NULL |              |
+| `varchar_field`   | character varying           | NOT NULL |              |
+| `int_field`       | integer                     | NOT NULL |              |
+| `text_field`      | text                        |          |              |
+| `boolean_field`   | boolean                     | NOT NULL | `false`      |
+| `json_field`      | json                        | NOT NULL | `'{}'::json` |
+| `timestamp_field` | timestamp without time zone | NOT NULL | `now()`      |

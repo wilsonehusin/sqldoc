@@ -64,7 +64,11 @@ func TestRenderTable(t *testing.T) {
 		if err := m.Generate(ctx); err != nil {
 			t.Fatalf("generating documentation: %s", err.Error())
 		}
-		golden.Assert(t, filepath.Join(dir, out), goldenFileName(out))
+		written, err := os.ReadFile(filepath.Join(dir, out))
+		if err != nil {
+			t.Fatalf("reading written file: %s", err.Error())
+		}
+		golden.Assert(t, string(written), goldenFileName(out))
 	}
 
 	t.Run("SingleTableWithColumns", runTest)
