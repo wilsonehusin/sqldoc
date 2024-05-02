@@ -2,12 +2,15 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 )
 
 type Database interface {
 	Close() error
+
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 
 	ListTables(ctx context.Context, schema string) ([]string, error)
 	ListColumns(ctx context.Context, schema, table string) ([]TableColumn, error)

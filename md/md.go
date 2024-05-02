@@ -60,7 +60,7 @@ func (m *MD) execUnified(ctx context.Context) error {
 				return fmt.Errorf("writing markdown: %w", err)
 			}
 			if i < len(tables)-1 {
-				f.WriteString("\n")
+				_, _ = f.WriteString("\n")
 			}
 		}
 	}

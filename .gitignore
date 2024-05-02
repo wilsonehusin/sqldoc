@@ -24,3 +24,7 @@ go.work
 
 # Goreleaser
 dist/
+
+# Development environment setup
+.env
+.idea

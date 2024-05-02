@@ -31,6 +31,10 @@ func (p *Postgres) Close() error {
 	return nil
 }
 
+func (p *Postgres) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return p.db.ExecContext(ctx, query, args...)
+}
+
 const pgListTables = `SELECT DISTINCT table_name FROM information_schema.tables WHERE table_schema = $1 ORDER BY table_name ASC`
 
 func (p *Postgres) ListTables(ctx context.Context, schema string) ([]string, error) {
