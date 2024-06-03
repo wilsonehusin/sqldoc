@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/charmbracelet/glamour v0.7.0
 	github.com/jackc/pgx/v5 v5.5.5
-	github.com/nao1215/markdown v0.4.0
+	github.com/nao1215/markdown v0.5.0
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/v3 v3.5.1
 )
